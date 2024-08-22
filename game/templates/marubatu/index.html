@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>まるばつゲーム</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'marubatu/styles.css' %}" />
+  </head>
+  <body>
+    <div>
+      <h1>まるばつゲーム</h1>
+      <div class="winner-message">
+        {% if winner is not None %}
+        <span class="{% if winner == 'O' %}red {% else %}blue {% endif %}">{{ winner }}の勝ち</span>
+        {% elif is_draw %}
+        <span class="green">引き分け</span>
+        {% else %}
+        <span>　</span>
+        {% endif %}
+      </div>
+
+      <form method="post" action="">
+        {% csrf_token %}
+
+        <table border="1">
+          {% for row in board %}
+          <tr>
+            {% for cell in row %}
+            <td>
+              <form method="post" action="" style="display: inline">
+                {% csrf_token %}
+                <input type="hidden" name="row" value="{{ forloop.parentloop.counter0 }}" />
+                <input type="hidden" name="col" value="{{ forloop.counter0 }}" />
+                <button
+                  type="submit"
+                  class="{% if cell == 'O' %}cell-O {% elif cell == 'X' %}cell-X {% elif winner %}cell-disabled {% endif %}">
+                  {{ cell|default:" " }}
+                </button>
+              </form>
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </table>
+        <div class="center">
+          <button type="submit" name="reset" class="reset-button" id="reset-button">
+            リセット
+          </button>
+          <button type="submit" name="matta" class="matta-button" id="matta-button">まった</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

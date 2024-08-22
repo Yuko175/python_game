@@ -1,0 +1,107 @@
+body {
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  background-color: #f0f0f0;
+}
+h1 {
+  text-align: center;
+}
+table {
+  border-collapse: collapse;
+  margin: 0 auto;
+}
+td {
+  padding: 0;
+  width: 100px;
+  height: 100px;
+}
+button {
+  width: 100%;
+  height: 100%;
+  font-size: 1.5em;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+button:not(:disabled):hover {
+  background-color: #e0e0e0;
+}
+.center {
+  text-align: center;
+}
+.reset-button {
+  width: 100px;
+  height: 60px;
+  font-size: 1em;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+  margin-top: 20px;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+  display: inline-block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.reset-button:hover {
+  background-color: #e0e0e0;
+}
+.matta-button {
+  width: 100px;
+  height: 60px;
+  font-size: 1em;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+  margin-top: 20px;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+  display: inline-block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.matta-button:hover {
+  background-color: #e0e0e0;
+}
+.winner-message {
+  text-align: center;
+  font-size: 1.5em;
+  margin: 20px;
+}
+.red {
+  color: red;
+}
+.blue {
+  color: blue;
+}
+.green {
+  color: green;
+}
+
+.cell-O {
+  color: red;
+  background-color: #f9d9d9;
+  pointer-events: none;
+}
+.cell-X {
+  color: blue;
+  background-color: #dedefc;
+  pointer-events: none;
+}
+.cell-disabled {
+  background-color: #f4f4f4;
+  pointer-events: none;
+}
