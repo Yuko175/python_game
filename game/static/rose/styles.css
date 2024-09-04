@@ -1,0 +1,273 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  /* background-color: #f0f4f8; */
+  background-size: cover;
+  /* background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: center; */
+  background-image: url("/static/rose/bg5.png");
+  background-size: cover; /* セルのサイズに合わせて画像を拡大・縮小 */
+  background-repeat: no-repeat; /* 画像の繰り返しを防ぐ */
+  background-position: center; /* 画像をセルの中央に配置 */
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* ビューポート全体の高さを占める */
+  text-align: center; /* テキストの中央揃え */
+}
+
+.message {
+  background-color: #ffffff;
+  color: #ff6f61;
+  /* border: 2px solid #ff6f61; */
+  padding: 5px 20px;
+  /* border-radius: 6px; ボタンの角をより丸める */
+  font-size: 20px;
+  /* opacity: 0.9; */
+}
+
+table {
+  width: auto; /* 自動幅にすることで中央に配置されやすくなる */
+  max-width: 100%; /* テーブルが画面を超えないようにする */
+  border-collapse: collapse;
+  margin: 0 auto; /* テーブルを中央に配置 */
+}
+
+td {
+  /* border: 2px solid #2a8b8c; */
+  text-align: center;
+  vertical-align: middle;
+  padding: 10px; /* パディングを少し広げて快適に */
+  box-sizing: border-box;
+}
+
+/* テーブルの列幅の比率を指定 */
+td:nth-child(1) {
+  width: 200px;
+}
+td:nth-child(2) {
+  width: 500px;
+}
+td:nth-child(3) {
+  width: 200px;
+}
+
+/* 2行2列目のセルにバックグラウンド画像を設定 */
+tr:nth-child(2) td:nth-child(2) {
+  background-image: url("/static/rose/board.png");
+  background-size: cover; /* セルのサイズに合わせて画像を拡大・縮小 */
+  background-repeat: no-repeat; /* 画像の繰り返しを防ぐ */
+  background-position: center; /* 画像をセルの中央に配置 */
+  width: 500px; /* セルの幅を指定 (必要に応じて変更) */
+  height: 500px; /* セルの高さを指定 (必要に応じて変更) */
+}
+
+.button-grid,
+.vertical-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.button-grid button,
+.vertical-buttons button {
+  margin: 8px;
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-weight: bold;
+}
+
+.button-grid {
+  display: flex;
+}
+
+.vertical-buttons {
+  flex-direction: column;
+}
+
+.btn-player2 {
+  color: #fff;
+  background: #f8b60f;
+  border: 2px solid #b99e3a;
+  padding: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 25px;
+}
+
+.btn-player2:hover {
+  color: #fdc332;
+  background: #fff;
+}
+
+.btn-player1 {
+  color: #fff;
+  background: #43c1b5;
+  border: 2px solid #2a8b8c;
+  padding: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 25px;
+}
+.btn-player1:hover {
+  color: #3caea3;
+  background: #fff;
+}
+
+.player2-active .btn-player1,
+.player1-active .btn-player2 {
+  pointer-events: none; /* クリックイベントを無効化 */
+  opacity: 0.6; /* 視覚的に無効化されていることを示す */
+}
+
+.btn-player2-pass-disabled {
+  color: #fff;
+  background: #f8b60f;
+  border: 2px solid #b99e3a;
+  padding: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 25px;
+  pointer-events: none; /* クリックイベントを無効化 */
+  opacity: 0.6; /* 視覚的に無効化されていることを示す */
+}
+
+.btn-player1-pass-disabled {
+  color: #fff;
+  background: #43c1b5;
+  border: 2px solid #2a8b8c;
+  padding: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 25px;
+  pointer-events: none; /* クリックイベントを無効化 */
+  opacity: 0.6; /* 視覚的に無効化されていることを示す */
+}
+
+.btn-card {
+  background-color: #ffffff;
+  color: #20639b;
+  border: 2px solid #20639b;
+  /* padding: 12px 20px; */
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 50px;
+}
+
+.btn-card-pass-disabled {
+  background-color: #ffffff;
+  color: #20639b;
+  border: 2px solid #20639b;
+  /* padding: 12px 20px; */
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 50px;
+  pointer-events: none; /* クリックイベントを無効化 */
+  opacity: 0.6; /* 視覚的に無効化されていることを示す */
+}
+.btn-card:hover {
+  color: #ffffff;
+  background: #20639b;
+  font-weight: bold;
+}
+.btn-reset {
+  background-color: #ffffff;
+  color: #ff6f61;
+  border: 2px solid #ff6f61;
+  /* padding: 12px 20px; */
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 30px;
+}
+.btn-reset:hover {
+  color: #ffffff;
+  background: #ff6f61;
+  font-weight: bold;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(9, 50px);
+  grid-template-rows: repeat(9, 50px);
+  /* gap: 2px; グリッド間の隙間を少し広げる */
+  width: 450px; /* 固定サイズ */
+  height: 450px; /* 固定サイズ */
+  margin: 0 auto; /* 中央揃え */
+  opacity: 0.8;
+  border: 2px solid #261300;
+}
+
+.board-cell {
+  /* background-color: #ffffff; */
+  border: 2px solid #261300;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  width: 50px; /* 固定サイズ */
+  height: 50px; /* 固定サイズ */
+  font-size: 40px;
+}
+
+.board-cell-player2 {
+  background-color: #f8d969;
+  border: 2px solid #261300;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  width: 50px; /* 固定サイズ */
+  height: 50px; /* 固定サイズ */
+  font-size: 40px;
+}
+.board-cell-player1 {
+  background-color: #95d7d0;
+  border: 2px solid #261300;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  width: 50px; /* 固定サイズ */
+  height: 50px; /* 固定サイズ */
+  font-size: 40px;
+}
+
+.knight-player2 {
+  color: #000;
+  background-color: #f6d55c;
+  border: none;
+  cursor: pointer;
+  border-radius: 0px; /* ボタンの角をより丸める */
+  font-size: 20px;
+}
+
+.knight-player1 {
+  color: #000;
+  background-color: #95d7d0;
+  border: none;
+  cursor: pointer;
+  border-radius: 0px; /* ボタンの角をより丸める */
+  font-size: 20px;
+}
+
+.right-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* ボタンを右寄せにする */
+}
+
+.right-button-container .vertical-buttons {
+  margin-bottom: 12px; /* ボタン間の隙間を少し広げる */
+}
+
+.left-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* ボタンを左寄せにする */
+}

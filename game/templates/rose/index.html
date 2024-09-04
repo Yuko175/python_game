@@ -1,0 +1,149 @@
+<!doctype html>
+{% comment %}FIXME activeが反対になっている && boardのcol,rowが逆
+&&"アクション可能","パス可能"を直書きしている {% endcomment%}
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rose</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'rose/styles.css' %}" />
+  </head>
+  <body
+    class="{% if player == 'player1' %} player2-active {% elif player == 'player2' %} player1-active {% else %} player2-active {% endif %}">
+    <div class="center">
+      <form method="post" action="{% url 'index' %}">
+        <table>
+          <tr>
+            <td>
+              {% csrf_token %}
+              <button type="submit" name="reset" class="btn btn-reset">𐛫　𐘨　𐛩</button>
+            </td>
+            <td>
+              <span class="message">
+                {% if player == 'player1' %} 𐛩 {% else %} 𐛫 {% endif %}
+                <span>
+                  {% if message is not None %}
+                  <span> {% if can_play %} 's turn{% else %} ：{{ message }}{% endif%} </span>
+                  {% else %}
+                  <span> 's turn</span>
+                  {% endif %}
+                </span>
+              </span>
+              <div class="button-grid">
+                {% for card in deck_cards %} {% if card.owner == 'player1' %}
+                <form method="POST" action="{% url 'index' %}" style="display: inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="card_number" value="{{ card.number }}" />
+                  <input type="hidden" name="card_owner" value="{{ card.owner }}" />
+                  <button
+                    type="submit"
+                    name="play_hand"
+                    class="{% if can_play %} btn btn-player1 {% else %} btn-player1-pass-disabled {% endif %}">
+                    {{ card.display }}
+                  </button>
+                </form>
+                {% endif %} {% endfor %}
+              </div>
+            </td>
+            <td>
+              <div class="left-button-container">
+                <form method="POST" action="{% url 'index' %}" style="display: inline">
+                  {% csrf_token %}
+                  <button
+                    type="submit"
+                    name="pass"
+                    value="player1"
+                    class="{% if can_play %} btn-player1-pass-disabled {% else %} btn btn-player1 {% endif %}">
+                    𐛫→𐛩
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="right-button-container">
+                <div class="vertical-buttons">
+                  <button class="knight-player1">𐂂</button>
+                  <button class="knight-player1">𐂂</button>
+                  <button class="knight-player1">𐂂</button>
+                  <button class="knight-player1">𐂂</button>
+                </div>
+                <br />
+                <div class="vertical-buttons">
+                  <button class="knight-player2">𐙼</button>
+                  <button class="knight-player2">𐂄</button>
+                  <button class="knight-player2">𐂄</button>
+                  <button class="knight-player2">𐂄</button>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="board">
+                {% for col in board_detail %}
+                <div class="board-row">
+                  {% for cell in col %}
+                  <div
+                    class="{% if cell == 'player1' %} board-cell-player1 {% elif cell == 'player2' %} board-cell-player2 {% else %} board-cell {% endif %}">
+                    <div>
+                      {% if k_position.col == forloop.parentloop.counter0 %}
+                      <div>{% if k_position.row == forloop.counter0 %} 𐛢 {% endif %}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endfor %}
+              </div>
+            </td>
+            <td>
+              <div class="left-button-container">
+                <button
+                  type="submit"
+                  name="draw_deck"
+                  class="{% if can_play %} btn btn-card {% else %} btn-card-pass-disabled {% endif %}">
+                  𐃁
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <div class="button-grid">
+                {% for card in deck_cards %} {% if card.owner == 'player2' %}
+                <form method="POST" action="{% url 'index' %}" style="display: inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="card_number" value="{{ card.number }}" />
+                  <input type="hidden" name="card_owner" value="{{ card.owner }}" />
+                  <button
+                    type="submit"
+                    name="play_hand"
+                    class="{% if can_play %} btn btn-player2 {% else %} btn-player2-pass-disabled {% endif %}">
+                    {{ card.display }}
+                  </button>
+                </form>
+                {% endif %} {% endfor %}
+              </div>
+            </td>
+            <td>
+              <div class="left-button-container">
+                <form method="POST" action="{% url 'index' %}" style="display: inline">
+                  {% csrf_token %}
+                  <button
+                    type="submit"
+                    name="pass"
+                    value="player2"
+                    class="{% if can_play %} btn-player2-pass-disabled {% else %} btn-player2 {% endif %}">
+                    𐛫←𐛩
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </form>
+    </div>
+  </body>
+</html>

@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'test_game.apps.TestGameConfig',
     'marubatu.apps.MarubatuConfig',
+    'rose.apps.RoseConfig',
 ]
 
 MIDDLEWARE = [
