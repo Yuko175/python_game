@@ -24,7 +24,7 @@
                 {% if player == 'player1' %} 𐛩 {% else %} 𐛫 {% endif %}
                 <span>
                   {% if message is not None %}
-                  <span> {% if can_play %} 's turn{% else %} ：{{ message }}{% endif%} </span>
+                  <span>：{{ message }}{% endif%} </span>
                   {% else %}
                   <span> 's turn</span>
                   {% endif %}
