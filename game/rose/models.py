@@ -16,6 +16,7 @@ class DeckCard(models.Model):
     right = models.IntegerField()
     left = models.IntegerField()
     display = models.CharField(max_length=100)
+    is_card_drawn = models.BooleanField(default=False)
 
 class ActionLog(models.Model):
     count = models.IntegerField() 

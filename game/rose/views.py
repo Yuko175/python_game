@@ -215,13 +215,18 @@ class IndexView(View):
             HttpResponse: レスポンス
         """
         # 使える山札を取得
-        available_cards = DeckCard.objects.filter(owner__isnull=True)
+        # available_cardsはis_card_drawnがFalseのカード
+        available_cards = DeckCard.objects.filter(is_card_drawn=False)
+        
         # 山札がない場合
         if not available_cards.exists():
-            print("カード上限(山札がない)")
-            message="カード上限(山札がない)"
-            
-            return render(request, 'rose/index.html', self.handle_update_context(previous_k_row, previous_k_col, previous_player, current_player,message))
+            # 山札をリセット
+            # ownerがnullのis_card_drawnをFalseにする
+            DeckCard.objects.filter(owner__isnull=True).update(is_card_drawn=False)
+            if not available_cards.exists():
+                print("カード上限(山札がない)")
+                message="カード上限(山札がない)"
+                return render(request, 'rose/index.html', self.handle_update_context(previous_k_row, previous_k_col, previous_player, current_player,message))
 
         # 山札からカードを引く
         drawn_card = random.choice(available_cards)
@@ -236,7 +241,8 @@ class IndexView(View):
 
         # 手札のカード番号を決定/手札の登録
         drawn_card.number = min(available_numbers) # ２. number
-        drawn_card.save()# １.owner,　２.numberを保存
+        drawn_card.is_card_drawn = True # ３. is_card_drawn
+        drawn_card.save()# １.owner,　２.number, ３. is_card_drawnを保存
 
         # ログの記入
         ActionLog.objects.create(count=current_count, player=current_player, action='draw_deck')
