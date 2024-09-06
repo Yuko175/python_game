@@ -215,14 +215,13 @@ class IndexView(View):
             HttpResponse: レスポンス
         """
         # 使える山札を取得
-        # available_cardsはis_card_drawnがFalseのカード
         available_cards = DeckCard.objects.filter(is_card_drawn=False)
         
         # 山札がない場合
         if not available_cards.exists():
             # 山札をリセット
-            # ownerがnullのis_card_drawnをFalseにする
             DeckCard.objects.filter(owner__isnull=True).update(is_card_drawn=False)
+            # 山札がない場合
             if not available_cards.exists():
                 print("カード上限(山札がない)")
                 message="カード上限(山札がない)"
