@@ -8,15 +8,20 @@ import random
 # [ ] エラーが出るボタンは非活性化する/エラー文を表示する
 # [x] 0. 山札に戻さない
 # [x] 1. 騎士の作成
-# [ ] 2. 領地の数(2つ合わせたのがコマの数(<=52))
+# [x] 2. 領地の数(2つ合わせたのがコマの数(<=52))
 # [ ] 3. 終了判定
 # [ ] 4. 得点計算
 # [ ] 5. 文字を全て線文字に変更(カーソルを合わせたら日本語)
+# [ ] 6. render(画面にデータを送る)の処理をupdate_context内にまとめる→終了判定の時に必要？
 
-MAX_HAND_CARD_NUMBER = 5  # 手札の最大枚数
-BOARD_SIZE = 9 # 盤面のサイズ：奇数：通常9x9
-KING_START_POSITION = BOARD_SIZE // 2
-KNIGHT_COUNT = 1 # 騎士の数
+# TODO: updateとsaveの使い分けについて調べる
+# QUESTION: QUESTIONの色が変わらない(setting.jsonの設定が効いていない？) 
+
+MAX_HAND_CARD_NUMBER = 5  # 手札の最大枚数(default:5)
+BOARD_SIZE = 9 # 盤面のサイズ,奇数が望ましい(default:9)
+MAX_BOARD_PIECES = 52 # 盤面の最大コマ数(default:52)
+KNIGHT_COUNT = 4 # 騎士の数(default:4)
+KING_START_POSITION = BOARD_SIZE // 2 # 王様の初期位置
 DECK_CARD = [
             {'up': 0, 'down': 1, 'right': 0, 'left': 1, 'display': '↙'},
             {'up': 0, 'down': 2, 'right': 0, 'left': 2, 'display': '↙↙'},
@@ -165,36 +170,51 @@ class IndexView(View):
                 message="アクションしてください"
             else:
                 message="パスしてください"
+        
+        # FIXME: ゲーム終了についての処理を書いていないので、メッセージ表示のみ変更している。実際はゲームは終了しない。
+        # 盤面のコマ数がMAX_BOARD_PIECES以上となったの場合
+        if Player.objects.get(player='player1').board_count + Player.objects.get(player='player2').board_count >= MAX_BOARD_PIECES:
+            message="ゲーム終了"
 
-        # 騎士の数を取得
-        #FIXME: player1_k_countって変数名：タイポとか考えて今後player1を置き換えようと思っているけど、変数名に"player1"って直に使っていいの？
+        # QUESTION: 取得系の処理はupdate_context内に持っていくべき？
+        # 騎士の数を取得する
+        # QUESTION: player1_k_countって変数名：タイポとか考えて今後player1を置き換えようと思っているけど、変数名に"player1"って直に使っていいの？
         # NOTE: Playerテーブルのknight_countでも代用可能
         player1_k_count = Knight.objects.filter(player='player1', is_used=False).count()
         player2_k_count = Knight.objects.filter(player='player2', is_used=False).count()
         
-        return self.update_context(row, col, player, player1_k_count, player2_k_count, can_play,message)
+        # 残りのコマ数の取得する
+        available_pieces = MAX_BOARD_PIECES-(Player.objects.get(player='player1').board_count + Player.objects.get(player='player2').board_count)
+        
+        # 盤面の状態を取得する
+        board_detail = self.get_board_detail()
+        
+        
+        return self.update_context(row, col, player, player1_k_count, player2_k_count, available_pieces, board_detail, can_play,message)
 
-    def update_context(self, row, col, player, player1_k_count, player2_k_count, can_play,message):
+    def update_context(self, row, col, player, player1_k_count, player2_k_count, available_pieces, board_detail, can_play,message):
         """contextのアップデート
         Args:
             row (int): 現在のkingの行
             col (int): 現在のkingの列
-            player (str): 現在のプレイヤー
+            player (str): 次のプレイヤーとは反対のプレイヤー
             player1_k_count (int): player1の騎士の数
             player2_k_count (int): player2の騎士の数
+            board_count (int): 盤面のコマの数
+            board_detail (list): 盤面の状態
             can_play (bool): アクション可能かどうか
             message (str): メッセージ
         Returns:
             dict: 画面のコンテキスト
         """
-        board_detail = self.get_board_detail()
         context = {
             'k_position': {'row': row, 'col': col},
             'board_detail': board_detail,
             'player': player,
             'deck_cards': DeckCard.objects.all(),
-            'player1_k_count':player1_k_count, 
-            'player2_k_count':player2_k_count,
+            'player1_k_count': player1_k_count, 
+            'player2_k_count': player2_k_count,
+            'available_pieces': available_pieces,
             'can_play': can_play,
             'message': message
         }
@@ -293,6 +313,7 @@ class IndexView(View):
         new_k_row = previous_k_row + hand_card.down - hand_card.up
         new_k_col = previous_k_col + hand_card.right - hand_card.left
 
+        # 移動可能か判断
         if self.is_playable_hand(hand_card, current_player, previous_k_row, previous_k_col):
             # FIXME: 切り出したい
             # FIXME: 複数回同じコードを書いている
@@ -303,8 +324,10 @@ class IndexView(View):
             if Board.objects.filter(row=new_k_row, col=new_k_col).exists():
                 # 押された騎士ボタンがある場合
                 if Knight.objects.filter(player=current_player, is_clicked=True).exists():
-                    # 相手のコマを削除,knightテーブル/playerテーブル更新
+                    # 相手のコマを削除
                     Board.objects.filter(row=new_k_row, col=new_k_col).delete()
+                    Player.objects.filter(player=previous_player).update(board_count=Player.objects.get(player=previous_player).board_count-1)
+                    # 自身の騎士を使う
                     Knight.objects.filter(player=current_player, is_clicked=True).update(is_used=True, is_clicked=False)
                     # NOTE: Playerテーブルを更新しているが、現在Playerテーブルのknight_countを利用したコードは書いていない
                     Player.objects.filter(player=current_player).update(knight_count=Player.objects.get(player=current_player).knight_count-1)
@@ -331,6 +354,9 @@ class IndexView(View):
         
         # 騎士のclickがあればをリセット
         Knight.objects.filter(is_clicked=True).update(is_clicked=False)
+        
+        # Playerテーブルのboard_countを更新
+        Player.objects.filter(player=current_player).update(board_count=Player.objects.get(player=current_player).board_count+1)
         
         # ログの記入
         ActionLog.objects.create(count=current_count, player=card_owner, action='play_hand')
