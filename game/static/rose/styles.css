@@ -127,7 +127,7 @@ tr:nth-child(2) td:nth-child(2) {
   opacity: 0.6; /* 視覚的に無効化されていることを示す */
 }
 
-.btn-player2-pass-disabled {
+.btn-player2-disabled {
   color: #fff;
   background: #f8b60f;
   border: 2px solid #b99e3a;
@@ -140,7 +140,7 @@ tr:nth-child(2) td:nth-child(2) {
   opacity: 0.6; /* 視覚的に無効化されていることを示す */
 }
 
-.btn-player1-pass-disabled {
+.btn-player1-disabled {
   color: #fff;
   background: #43c1b5;
   border: 2px solid #2a8b8c;
@@ -162,7 +162,7 @@ tr:nth-child(2) td:nth-child(2) {
   font-size: 50px;
 }
 
-.btn-card-pass-disabled {
+.btn-card-disabled {
   background-color: #ffffff;
   color: #20639b;
   border: 2px solid #20639b;
@@ -241,19 +241,47 @@ tr:nth-child(2) td:nth-child(2) {
 .knight-player2 {
   color: #000;
   background-color: #f6d55c;
-  border: none;
+  border: 2px solid #b99e3a;
+  padding: 5px;
   cursor: pointer;
-  border-radius: 0px; /* ボタンの角をより丸める */
-  font-size: 20px;
+  font-weight: bold;
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 23px;
+}
+
+.knight-player2-disabled {
+  color: #000;
+  background-color: #f6d55c;
+  border: 2px solid #b99e3a;
+  padding: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 23px;
+  pointer-events: none; /* クリックイベントを無効化 */
+  opacity: 0.6; /* 視覚的に無効化されていることを示す */
 }
 
 .knight-player1 {
   color: #000;
   background-color: #95d7d0;
-  border: none;
+  border: 2px solid #2a8b8c;
+  padding: 5px;
   cursor: pointer;
-  border-radius: 0px; /* ボタンの角をより丸める */
-  font-size: 20px;
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 23px;
+}
+
+.knight-player1-disabled {
+  color: #000;
+  background-color: #95d7d0;
+  border: 2px solid #2a8b8c;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 6px; /* ボタンの角をより丸める */
+  font-size: 23px;
+  pointer-events: none; /* クリックイベントを無効化 */
+  opacity: 0.6; /* 視覚的に無効化されていることを示す */
 }
 
 .right-button-container {

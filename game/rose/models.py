@@ -26,3 +26,10 @@ class ActionLog(models.Model):
 class Player(models.Model):
     player = models.CharField(max_length=10, blank=True, null=True)    
     knight_count = models.IntegerField() 
+    board_count = models.IntegerField(default=0)
+
+class Knight(models.Model):
+    player = models.CharField(max_length=10, blank=True, null=True)    
+    knight_number = models.IntegerField()
+    is_clicked = models.BooleanField(default=False)
+    is_used = models.BooleanField(default=False)

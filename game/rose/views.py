@@ -1,21 +1,22 @@
 from django.shortcuts import render
 from django.views import View
 from django.http import HttpResponse
-from .models import Board, DeckCard, ActionLog, Player
+from .models import Board, DeckCard, ActionLog, Player, Knight
 import random
 
-# TODO: エラーが出るボタンは非活性化する/エラー文を表示する
-# TODO: 0. 山札に戻さない
-# TODO: 1. 騎士の作成(playerテーブル：騎士の数：領地の数(2つ合わせたのがコマの数))
-# TODO: 2. 終了判定
-# TODO: 3. 得点計算
-# TODO: 4. 文字を全て線文字に変更(カーソルを合わせたら日本語)
-
+# NOTE: 実装の進捗
+# [ ] エラーが出るボタンは非活性化する/エラー文を表示する
+# [x] 0. 山札に戻さない
+# [x] 1. 騎士の作成
+# [ ] 2. 領地の数(2つ合わせたのがコマの数(<=52))
+# [ ] 3. 終了判定
+# [ ] 4. 得点計算
+# [ ] 5. 文字を全て線文字に変更(カーソルを合わせたら日本語)
 
 MAX_HAND_CARD_NUMBER = 5  # 手札の最大枚数
 BOARD_SIZE = 9 # 盤面のサイズ：奇数：通常9x9
 KING_START_POSITION = BOARD_SIZE // 2
-KNIGHT_COUNT = 4 # 騎士の数
+KNIGHT_COUNT = 1 # 騎士の数
 DECK_CARD = [
             {'up': 0, 'down': 1, 'right': 0, 'left': 1, 'display': '↙'},
             {'up': 0, 'down': 2, 'right': 0, 'left': 2, 'display': '↙↙'},
@@ -88,10 +89,14 @@ class IndexView(View):
         if 'pass' in request.POST:
             return self.handle_pass(request, current_count, current_player,previous_k_row, previous_k_col,previous_player)
         
+        #　騎士を使う
+        if 'use_knight' in request.POST:
+            return self.handle_use_knight(request, current_player,previous_k_row, previous_k_col,previous_player)
+        
         # エラー応答
         return HttpResponse("request.POST：エラー", status=404)
 
-    # NOTE: 初期設定
+
     def initialize_DB(self):
         """初期設定する
 
@@ -101,15 +106,22 @@ class IndexView(View):
         DeckCard.objects.all().delete()
         ActionLog.objects.all().delete()
         Player.objects.all().delete() 
+        Knight.objects.all().delete() 
+        
         # 作成   
         Board.objects.create(id=1, row=KING_START_POSITION, col=KING_START_POSITION, count=0, player='start')
         self.create_deck_cards()
         ActionLog.objects.create(count=0, player=None, action=None)
         Player.objects.create(player='player1', knight_count=KNIGHT_COUNT)
         Player.objects.create(player='player2', knight_count=KNIGHT_COUNT)
+        # 騎士の数を設定
+        for knight_number in range(KNIGHT_COUNT):
+            Knight.objects.create(player='player1', knight_number=knight_number, is_used=False)
+        for knight_number in range(KNIGHT_COUNT):
+            Knight.objects.create(player='player2', knight_number=knight_number, is_used=False)
 
 
-    # NOTE: 盤面の状態を取得
+
     def get_board_detail(self):
         """盤面の状態を取得する
         Returns:
@@ -121,7 +133,7 @@ class IndexView(View):
             board_detail[k.col][k.row] = k.player
         return board_detail
 
-    # NOTE: カード作成
+
     def create_deck_cards(self):
         """カードを作成する
         
@@ -140,27 +152,36 @@ class IndexView(View):
         Args:
             row (int): 現在のkingの行
             col (int): 現在のkingの列
-            player (str): 現在のプレイヤー
+            player (str): 次のプレイヤーとは反対のプレイヤー
             next_player (str): 次のプレイヤー
             message (str): メッセージ
         Returns:
             dict: 画面のコンテキスト
         """
+        # can_playをセット
         can_play = self.can_play(row, col, next_player)
         if message is None:
             if can_play:
                 message="アクションしてください"
             else:
                 message="パスしてください"
-        return self.update_context(row, col, player,can_play ,message)
 
-    # NOTE: 画面アップデート
-    def update_context(self, row, col, player,can_play,message):
+        # 騎士の数を取得
+        #FIXME: player1_k_countって変数名：タイポとか考えて今後player1を置き換えようと思っているけど、変数名に"player1"って直に使っていいの？
+        # NOTE: Playerテーブルのknight_countでも代用可能
+        player1_k_count = Knight.objects.filter(player='player1', is_used=False).count()
+        player2_k_count = Knight.objects.filter(player='player2', is_used=False).count()
+        
+        return self.update_context(row, col, player, player1_k_count, player2_k_count, can_play,message)
+
+    def update_context(self, row, col, player, player1_k_count, player2_k_count, can_play,message):
         """contextのアップデート
         Args:
             row (int): 現在のkingの行
             col (int): 現在のkingの列
             player (str): 現在のプレイヤー
+            player1_k_count (int): player1の騎士の数
+            player2_k_count (int): player2の騎士の数
             can_play (bool): アクション可能かどうか
             message (str): メッセージ
         Returns:
@@ -172,12 +193,13 @@ class IndexView(View):
             'board_detail': board_detail,
             'player': player,
             'deck_cards': DeckCard.objects.all(),
+            'player1_k_count':player1_k_count, 
+            'player2_k_count':player2_k_count,
             'can_play': can_play,
             'message': message
         }
         return context
     
-    #NOTE: アクション可能か判断する 
     def can_play(self, row, col, next_player):
         """ アクション可能か判断する 
         Args:
@@ -201,7 +223,6 @@ class IndexView(View):
             print("アクション可能")
             return True
 
-    # NOTE: 山札からカードを引く処理
     def handle_draw_deck(self, request, current_count, current_player, previous_player ,previous_k_row, previous_k_col):
         """山札からカードを引く処理
         Args:
@@ -243,12 +264,14 @@ class IndexView(View):
         drawn_card.is_card_drawn = True # ３. is_card_drawn
         drawn_card.save()# １.owner,　２.number, ３. is_card_drawnを保存
 
+        # 騎士のclickがあればをリセット
+        Knight.objects.filter(is_clicked=True).update(is_clicked=False)
+
         # ログの記入
         ActionLog.objects.create(count=current_count, player=current_player, action='draw_deck')
 
         return render(request, 'rose/index.html', self.handle_update_context(previous_k_row, previous_k_col, current_player,  previous_player))
 
-    # NOTE: 手札からカードを出す処理
     def handle_play_hand(self, request, k_info, current_count, current_player, previous_player, previous_k_row, previous_k_col):
         """ 手札からカードを出す処理
         Args:
@@ -266,17 +289,33 @@ class IndexView(View):
         card_owner = request.POST.get('card_owner')
         hand_card = DeckCard.objects.get(owner=card_owner, number=card_number)
         
-        # 新しい位置
+        # 置きたい位置
         new_k_row = previous_k_row + hand_card.down - hand_card.up
         new_k_col = previous_k_col + hand_card.right - hand_card.left
 
         if self.is_playable_hand(hand_card, current_player, previous_k_row, previous_k_col):
-            # TODO: 騎士のボタンが押されている場合　かつ　騎士の残機が0より大きい場合
-            Board.objects.filter(row=new_k_row, col=new_k_col).delete()
-            # TODO: 騎士のcountを減らす処理
+            # FIXME: 切り出したい
+            # FIXME: 複数回同じコードを書いている
+            # 置きたい場所にstartがある場合
+            if Board.objects.filter(row=new_k_row, col=new_k_col, player='start').exists():
+                Board.objects.filter(row=new_k_row, col=new_k_col).delete()
+            # 相手のコマがある場合
+            if Board.objects.filter(row=new_k_row, col=new_k_col).exists():
+                # 押された騎士ボタンがある場合
+                if Knight.objects.filter(player=current_player, is_clicked=True).exists():
+                    # 相手のコマを削除,knightテーブル/playerテーブル更新
+                    Board.objects.filter(row=new_k_row, col=new_k_col).delete()
+                    Knight.objects.filter(player=current_player, is_clicked=True).update(is_used=True, is_clicked=False)
+                    # NOTE: Playerテーブルを更新しているが、現在Playerテーブルのknight_countを利用したコードは書いていない
+                    Player.objects.filter(player=current_player).update(knight_count=Player.objects.get(player=current_player).knight_count-1)
+                # 押された騎士ボタンがない場合
+                else:
+                    print("騎士のボタンを押してから選択してください")
+                    message="騎士のボタンを押してから選択してください"
+                    return render(request, 'rose/index.html', self.handle_update_context(previous_k_row, previous_k_col, previous_player, current_player,message))
         else:
-            print("移動不可")
-            message="移動不可"
+            print("移動できません")
+            message="移動できません"
             return render(request, 'rose/index.html', self.handle_update_context(previous_k_row, previous_k_col, previous_player, current_player,message))
 
         # 手札を使用済みに更新
@@ -290,12 +329,14 @@ class IndexView(View):
         k_info.player = card_owner
         Board.objects.create(row=new_k_row, col=new_k_col, count=k_info.count, player=k_info.player)
         
+        # 騎士のclickがあればをリセット
+        Knight.objects.filter(is_clicked=True).update(is_clicked=False)
+        
         # ログの記入
         ActionLog.objects.create(count=current_count, player=card_owner, action='play_hand')
 
         return render(request, 'rose/index.html', self.handle_update_context(new_k_row, new_k_col, card_owner,previous_player))
 
-    # NOTE: パス処理
     def handle_pass(self, request, current_count, current_player,previous_k_row, previous_k_col,previous_player):
         """ パスの処理をする
         Args:
@@ -319,14 +360,49 @@ class IndexView(View):
         elif DeckCard.objects.filter(owner__isnull=True).exists() and len(DeckCard.objects.filter(owner=current_player)) < MAX_HAND_CARD_NUMBER:
             print("山札をひけるのでパスできません")
             message="山札をひけるのでパスできません"
-            return render(request, 'rose/index.html', self.handle_update_context(previous_k_row, previous_k_col, previous_player, current_player,message))
+            return render(request, 'rose/index.html', self.handle_update_context(previous_k_row, previous_k_col, previous_player, current_player, message))
         # パス処理
-        else:    
+        else:
+            # 騎士のclickがあればをリセット
+            Knight.objects.filter(is_clicked=True).update(is_clicked=False)
+
+            # パス
             ActionLog.objects.create(count=current_count, player=current_player, action='pass')
             print(f"{current_player}がパスしました")
             return render(request, 'rose/index.html', self.handle_update_context(previous_k_row, previous_k_col, current_player , previous_player)) 
 
-    # NOTE: 移動可能か判断する
+    def handle_use_knight(self, request, current_player,previous_k_row, previous_k_col,previous_player):
+        """ 騎士を使う処理
+        Args:
+            request (HttpRequest): リクエスト
+            current_player (str): 現在のプレイヤー
+            previous_k_row (int): 1つ前のkingの行
+            previous_k_col (int): 1つ前のkingの列
+            previous_player (str): 1つ前のプレイヤー
+        Returns:
+            HttpResponse: レスポンス
+        """
+        # 使われていない騎士が存在することを確認
+        if Knight.objects.filter(player=current_player, is_used=False).count() <= 0:
+            # NOTE: 使われていない騎士がいない場合ボタンを非活性化しているため、運用上ここを通ることはない
+            print("騎士がいません")
+            message="騎士がいません"
+            return render(request, 'rose/index.html', self.handle_update_context(previous_k_row, previous_k_col, previous_player, current_player ,message))
+        # 使われていない1番小さい数字の騎士を取得
+        knight = Knight.objects.filter(player=current_player, is_used=False).order_by('knight_number').first()
+        # クリックされている場合、is_clickedをFalseにする
+        if knight.is_clicked:
+            knight.is_clicked = False
+            knight.save()
+            message="騎士の選択を解除しました"  
+        # クリックされていない場合、is_clickedをTrueにする
+        else:
+            knight.is_clicked = True
+            knight.save()
+            message="騎士を選択しました"  
+        return render(request, 'rose/index.html', self.handle_update_context(previous_k_row, previous_k_col, previous_player, current_player ,message)) 
+        
+        
     def is_playable_hand(self, hand_card, current_player, previous_k_row, previous_k_col):
         """ 移動可能か判断する
         Args:
@@ -337,29 +413,27 @@ class IndexView(View):
         Returns:
             bool: 移動可能かどうか
         """
-        tmp_previous_k_row=previous_k_row
-        tmp_previous_k_col=previous_k_col
+
         # 新しい位置を計算
-        tmp_new_k_row = tmp_previous_k_row + hand_card.down - hand_card.up
-        tmp_new_k_col = tmp_previous_k_col + hand_card.right - hand_card.left
-        print(f"新しい位置：{tmp_new_k_col}, {tmp_new_k_row}")
+        new_k_row = previous_k_row + hand_card.down - hand_card.up
+        new_k_col = previous_k_col + hand_card.right - hand_card.left
+        print(f"新しい位置：{new_k_col}, {new_k_row}")
 
         # ボードの端に到達したかチェック
-        if tmp_new_k_row < 0 or tmp_new_k_row >= BOARD_SIZE or tmp_new_k_col < 0 or tmp_new_k_col >= BOARD_SIZE:
+        if new_k_row < 0 or new_k_row >= BOARD_SIZE or new_k_col < 0 or new_k_col >= BOARD_SIZE:
             print("ボードの端に到達")
             return False
         
         # 盤面にすでにコマがある場合
-        if Board.objects.filter(row=tmp_new_k_row, col=tmp_new_k_col).exists():
-            existing_board = Board.objects.get(row=tmp_new_k_row, col=tmp_new_k_col)
-            # 相手のコマがある場合
-            if existing_board.player != current_player:
-                print(f"{existing_board.player} != {current_player}")
-                print("すでに相手のコマがある")
+        if Board.objects.filter(row=new_k_row, col=new_k_col).exists():
+            existing_board = Board.objects.get(row=new_k_row, col=new_k_col)
+            # 相手のコマがある　かつ　current_playerの騎士がいる場合
+            if (existing_board.player != current_player) and (Knight.objects.filter(player=current_player, is_used=False).exists()):
+                print("すでに相手のコマがある、かつ、騎士が残っている")
                 return True
             # 自分のコマがある場合
             else:
-                print("すでに自分のコマがある")
+                print("騎士がおらず移動できない、または、すでに自分のコマがある")
                 return False
             
         # 盤面にコマがない場合   
@@ -367,7 +441,6 @@ class IndexView(View):
             return True
     
 
-    # NOTE: カード番号の取得(手札の中で使われていないカード番号のリストを返却)
     def get_available_card_numbers(self, owner):
         """ 手札の中で使われていないカード番号を取得する
         Args:
@@ -381,7 +454,6 @@ class IndexView(View):
                 available_numbers.append(number)
         return available_numbers
 
-    # NOTE: プレイ可能な手札
     def get_playable_hand_cards(self,  previous_k_row, previous_k_col, next_player):
         """ プレイ可能な手札を取得する
         Args:

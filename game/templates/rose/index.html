@@ -1,6 +1,5 @@
 <!doctype html>
-{% comment %}FIXME activeが反対になっている && boardのcol,rowが逆
-&&"アクション可能","パス可能"を直書きしている {% endcomment%}
+{% comment %}FIXME activeが反対になっている && boardのcol,rowが逆{% endcomment%}
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
@@ -24,7 +23,7 @@
                 {% if player == 'player1' %} 𐛩 {% else %} 𐛫 {% endif %}
                 <span>
                   {% if message is not None %}
-                  <span>：{{ message }}{% endif%} </span>
+                  <span>：{{ message }}</span>
                   {% else %}
                   <span> 's turn</span>
                   {% endif %}
@@ -39,7 +38,7 @@
                   <button
                     type="submit"
                     name="play_hand"
-                    class="{% if can_play %} btn btn-player1 {% else %} btn-player1-pass-disabled {% endif %}">
+                    class="{% if can_play %} btn btn-player1 {% else %} btn-player1-disabled {% endif %}">
                     {{ card.display }}
                   </button>
                 </form>
@@ -54,7 +53,7 @@
                     type="submit"
                     name="pass"
                     value="player1"
-                    class="{% if can_play %} btn-player1-pass-disabled {% else %} btn btn-player1 {% endif %}">
+                    class="{% if can_play %} btn-player1-disabled {% else %} btn btn-player1 {% endif %}">
                     𐛫→𐛩
                   </button>
                 </form>
@@ -65,17 +64,28 @@
             <td>
               <div class="right-button-container">
                 <div class="vertical-buttons">
-                  <button class="knight-player1">𐂂</button>
-                  <button class="knight-player1">𐂂</button>
-                  <button class="knight-player1">𐂂</button>
-                  <button class="knight-player1">𐂂</button>
+                  <div>
+                    {% csrf_token %}
+                    <button
+                      type="submit"
+                      name="use_knight"
+                      class="{% if player1_k_count <= 0 %} knight-player1-disabled {% else %} knight-player1 {% endif %}">
+                      　𐂂　
+                    </button>
+                    <span>×　{{player1_k_count}}</span>
+                  </div>
                 </div>
                 <br />
                 <div class="vertical-buttons">
-                  <button class="knight-player2">𐙼</button>
-                  <button class="knight-player2">𐂄</button>
-                  <button class="knight-player2">𐂄</button>
-                  <button class="knight-player2">𐂄</button>
+                  <div>
+                    {% csrf_token %}
+                    <button
+                      type="submit"
+                      name="use_knight"
+                      class="{% if player2_k_count <= 0 %} knight-player2-disabled {% else %} knight-player2 {% endif %}">
+                      　𐂄　</button
+                    ><span>×　{{player2_k_count}}</span>
+                  </div>
                 </div>
               </div>
             </td>
@@ -102,7 +112,7 @@
                 <button
                   type="submit"
                   name="draw_deck"
-                  class="{% if can_play %} btn btn-card {% else %} btn-card-pass-disabled {% endif %}">
+                  class="{% if can_play %} btn btn-card {% else %} btn-card-disabled {% endif %}">
                   𐃁
                 </button>
               </div>
@@ -120,7 +130,7 @@
                   <button
                     type="submit"
                     name="play_hand"
-                    class="{% if can_play %} btn btn-player2 {% else %} btn-player2-pass-disabled {% endif %}">
+                    class="{% if can_play %} btn btn-player2 {% else %} btn-player2-disabled {% endif %}">
                     {{ card.display }}
                   </button>
                 </form>
@@ -135,7 +145,7 @@
                     type="submit"
                     name="pass"
                     value="player2"
-                    class="{% if can_play %} btn-player2-pass-disabled {% else %} btn-player2 {% endif %}">
+                    class="{% if can_play %} btn-player2-disabled {% else %} btn-player2 {% endif %}">
                     𐛫←𐛩
                   </button>
                 </form>
