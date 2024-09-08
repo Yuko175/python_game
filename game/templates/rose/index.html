@@ -69,10 +69,10 @@
                     <button
                       type="submit"
                       name="use_knight"
-                      class="{% if player1_k_count <= 0 %} knight-player1-disabled {% else %} knight-player1 {% endif %}">
+                      class="{% if p1_knight_count <= 0 %} knight-player1-disabled {% else %} knight-player1 {% endif %}">
                       　𐂂　
                     </button>
-                    <span>×　{{player1_k_count}}</span>
+                    <span>×　{{p1_knight_count}}</span>
                   </div>
                 </div>
                 <br />
@@ -82,9 +82,9 @@
                     <button
                       type="submit"
                       name="use_knight"
-                      class="{% if player2_k_count <= 0 %} knight-player2-disabled {% else %} knight-player2 {% endif %}">
+                      class="{% if p2_knight_count <= 0 %} knight-player2-disabled {% else %} knight-player2 {% endif %}">
                       　𐂄　</button
-                    ><span>×　{{player2_k_count}}</span>
+                    ><span>×　{{p2_knight_count}}</span>
                   </div>
                 </div>
               </div>

@@ -14,9 +14,14 @@ import random
 # [ ] 5. 文字を全て線文字に変更(カーソルを合わせたら日本語)
 # [ ] 6. render(画面にデータを送る)の処理をupdate_context内にまとめる→終了判定の時に必要？
 # [ ] 7. はじめに手札を配る
+# [ ] 8. PlayerテーブルにActionLogのplayer(手番をどっちが保持しているのか)を追加
+# [ ] 9. PlayerテーブルにKnightのis_clickedを追加
+# [ ] 10. Playerテーブルのboard_countを削除
+# [ ] 11. Boardテーブルのcountを削除
+# [ ] 12. DeckCardテーブルのis_card_drawnを廃止、ownerをgraveyardにする
+# [ ] 13. DeckCardテーブルのnumberを削除、owner=player1のcountで手札枚数を管理する
 
 # TODO: updateとsaveの使い分けについて調べる
-# QUESTION: QUESTIONの色が変わらない(setting.jsonの設定が効いていない？) 
 
 MAX_HAND_CARD_NUMBER = 5  # 手札の最大枚数(default:5)
 BOARD_SIZE = 9 # 盤面のサイズ,奇数が望ましい(default:9)
@@ -125,6 +130,8 @@ class IndexView(View):
             Knight.objects.create(player='player1', knight_number=knight_number, is_used=False)
         for knight_number in range(KNIGHT_COUNT):
             Knight.objects.create(player='player2', knight_number=knight_number, is_used=False)
+        # TODO: ここで手札を配る処理を追加する
+        # randomにownerを手札の枚数ずつ設定する
 
 
 
@@ -176,47 +183,37 @@ class IndexView(View):
         is_game_finished = self.is_game_finished()
         if is_game_finished:
             message="ゲーム終了"
+        
+        return self.update_context(row, col, player, can_play, is_game_finished,message)
 
-        # QUESTION: 取得系の処理はupdate_context内に持っていくべき？
-
-        # 騎士の数を取得する
-        # QUESTION: player1_k_countって変数名：タイポとか考えて今後player1を置き換えようと思っているけど、変数名に"player1"って直に使っていいの？
-        # NOTE: Playerテーブルのknight_countでも代用可能
-        player1_k_count = Knight.objects.filter(player='player1', is_used=False).count()
-        player2_k_count = Knight.objects.filter(player='player2', is_used=False).count()
-        
-        # 残りのコマ数の取得する
-        available_pieces = MAX_BOARD_PIECES-(Player.objects.get(player='player1').board_count + Player.objects.get(player='player2').board_count)
-        
-        # 盤面の状態を取得する
-        board_detail = self.get_board_detail()
-        
-        
-        return self.update_context(row, col, player, player1_k_count, player2_k_count, available_pieces, board_detail, can_play, is_game_finished,message)
-
-    def update_context(self, row, col, player, player1_k_count, player2_k_count, available_pieces, board_detail, can_play,is_game_finished,message):
-        """contextのアップデート
+    def update_context(self, row, col, player, can_play,is_game_finished,message):
+        """画面のコンテキストを更新する
         Args:
             row (int): 現在のkingの行
             col (int): 現在のkingの列
             player (str): 次のプレイヤーとは反対のプレイヤー
-            player1_k_count (int): player1の騎士の数
-            player2_k_count (int): player2の騎士の数
-            available_pieces (int): 残りのコマ数
-            board_detail (list): 盤面の状態
             can_play (bool): アクション可能かどうか
             is_game_finished (bool): ゲーム終了かどうか
             message (str): メッセージ
         Returns:
             dict: 画面のコンテキスト
         """
+        board_detail = self.get_board_detail()
+        deck_cards = DeckCard.objects.all()
+        # 騎士の数を取得する
+        # NOTE: Playerテーブルのknight_countでも代用可能
+        p1_knight_count = Knight.objects.filter(player='player1', is_used=False).count()
+        p2_knight_count = Knight.objects.filter(player='player2', is_used=False).count()
+
+        available_pieces = MAX_BOARD_PIECES-(Player.objects.get(player='player1').board_count + Player.objects.get(player='player2').board_count)
+        
         context = {
             'k_position': {'row': row, 'col': col},
             'board_detail': board_detail,
             'player': player,
-            'deck_cards': DeckCard.objects.all(),
-            'player1_k_count': player1_k_count, 
-            'player2_k_count': player2_k_count,
+            'deck_cards': deck_cards,
+            'p1_knight_count': p1_knight_count, 
+            'p2_knight_count': p2_knight_count,
             'available_pieces': available_pieces,
             'can_play': can_play,
             'is_game_finished': is_game_finished,
@@ -230,8 +227,10 @@ class IndexView(View):
             bool: ゲーム終了かどうか
         """
         # パスが連続で2回行われた場合
-        if ActionLog.objects.filter(player='player1').exists() and ActionLog.objects.filter(player='player2').exists():
-            if ActionLog.objects.filter(player='player1').latest('count').action == 'pass' and ActionLog.objects.filter(player='player2').latest('count').action == 'pass':
+        if ActionLog.objects.filter(player='player1').exists() and \
+            ActionLog.objects.filter(player='player2').exists() and \
+            ActionLog.objects.filter(player='player1').latest('count').action == 'pass' and \
+            ActionLog.objects.filter(player='player2').latest('count').action == 'pass':
                 return True
         # 盤面のコマ数がMAX_BOARD_PIECES以上となったの場合
         if Player.objects.get(player='player1').board_count + Player.objects.get(player='player2').board_count >= MAX_BOARD_PIECES:
@@ -337,18 +336,29 @@ class IndexView(View):
 
         # 移動可能か判断
         if self.is_playable_hand(hand_card, current_player, previous_k_row, previous_k_col):
+            # 次に置く場所にコマがあるかどうか→相手のコマがある場合　または　空白の場合にTrue
             # FIXME: 切り出したい
             # FIXME: 複数回同じコードを書いている
 
             # 相手のコマがある場合
-            if Board.objects.filter(row=new_k_row, col=new_k_col).exists():
+            enemy_piece = Board.objects.get(row=new_k_row, col=new_k_col) \
+                if Board.objects.filter(row=new_k_row, col=new_k_col).exists() \
+                else None
+            # 騎士ボタンが押されている場合
+            clicked_knight = Knight.objects.get(player=current_player, is_clicked=True) \
+                if Knight.objects.filter(player=current_player, is_clicked=True).exists() \
+                else None
+            
+            if enemy_piece != None:
                 # 押された騎士ボタンがある場合
-                if Knight.objects.filter(player=current_player, is_clicked=True).exists():
+                if clicked_knight != None:
                     # 相手のコマを削除
-                    Board.objects.filter(row=new_k_row, col=new_k_col).delete()
+                    enemy_piece.delete()
                     Player.objects.filter(player=previous_player).update(board_count=Player.objects.get(player=previous_player).board_count-1)
                     # 自身の騎士を使う
-                    Knight.objects.filter(player=current_player, is_clicked=True).update(is_used=True, is_clicked=False)
+                    clicked_knight.is_used=True
+                    clicked_knight.is_clicked=False
+                    clicked_knight.save()
                     # NOTE: Playerテーブルを更新しているが、現在Playerテーブルのknight_countを利用したコードは書いていない
                     Player.objects.filter(player=current_player).update(knight_count=Player.objects.get(player=current_player).knight_count-1)
                 # 押された騎士ボタンがない場合
