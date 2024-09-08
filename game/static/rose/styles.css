@@ -122,7 +122,18 @@ tr:nth-child(2) td:nth-child(2) {
 }
 
 .player2-active .btn-player1,
-.player1-active .btn-player2 {
+.player1-active .btn-player2,
+.player2-active .knight-player1,
+.player1-active .knight-player2 {
+  pointer-events: none; /* クリックイベントを無効化 */
+  opacity: 0.6; /* 視覚的に無効化されていることを示す */
+}
+
+.game_over .btn-player1,
+.game_over .btn-player2,
+.game_over .btn-card,
+.game_over .knight-player1,
+.game_over .knight-player2 {
   pointer-events: none; /* クリックイベントを無効化 */
   opacity: 0.6; /* 視覚的に無効化されていることを示す */
 }

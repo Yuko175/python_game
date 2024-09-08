@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{% static 'rose/styles.css' %}" />
   </head>
   <body
-    class="{% if player == 'player1' %} player2-active {% elif player == 'player2' %} player1-active {% else %} player2-active {% endif %}">
+    class="{% if is_game_finished %} game_over {% elif player == 'player1' %} player2-active {% elif player == 'player2' %} player1-active {% else %} player1-active {% endif %}">
     <div class="center">
       <form method="post" action="{% url 'index' %}">
         <table>

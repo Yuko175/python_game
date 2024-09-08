@@ -9,10 +9,11 @@ import random
 # [x] 0. 山札に戻さない
 # [x] 1. 騎士の作成
 # [x] 2. 領地の数(2つ合わせたのがコマの数(<=52))
-# [ ] 3. 終了判定
+# [x] 3. 終了判定
 # [ ] 4. 得点計算
 # [ ] 5. 文字を全て線文字に変更(カーソルを合わせたら日本語)
 # [ ] 6. render(画面にデータを送る)の処理をupdate_context内にまとめる→終了判定の時に必要？
+# [ ] 7. はじめに手札を配る
 
 # TODO: updateとsaveの使い分けについて調べる
 # QUESTION: QUESTIONの色が変わらない(setting.jsonの設定が効いていない？) 
@@ -171,12 +172,13 @@ class IndexView(View):
             else:
                 message="パスしてください"
         
-        # FIXME: ゲーム終了についての処理を書いていないので、メッセージ表示のみ変更している。実際はゲームは終了しない。
-        # 盤面のコマ数がMAX_BOARD_PIECES以上となったの場合
-        if Player.objects.get(player='player1').board_count + Player.objects.get(player='player2').board_count >= MAX_BOARD_PIECES:
+        # is_game_finishedをセット
+        is_game_finished = self.is_game_finished()
+        if is_game_finished:
             message="ゲーム終了"
 
         # QUESTION: 取得系の処理はupdate_context内に持っていくべき？
+
         # 騎士の数を取得する
         # QUESTION: player1_k_countって変数名：タイポとか考えて今後player1を置き換えようと思っているけど、変数名に"player1"って直に使っていいの？
         # NOTE: Playerテーブルのknight_countでも代用可能
@@ -190,9 +192,9 @@ class IndexView(View):
         board_detail = self.get_board_detail()
         
         
-        return self.update_context(row, col, player, player1_k_count, player2_k_count, available_pieces, board_detail, can_play,message)
+        return self.update_context(row, col, player, player1_k_count, player2_k_count, available_pieces, board_detail, can_play, is_game_finished,message)
 
-    def update_context(self, row, col, player, player1_k_count, player2_k_count, available_pieces, board_detail, can_play,message):
+    def update_context(self, row, col, player, player1_k_count, player2_k_count, available_pieces, board_detail, can_play,is_game_finished,message):
         """contextのアップデート
         Args:
             row (int): 現在のkingの行
@@ -200,9 +202,10 @@ class IndexView(View):
             player (str): 次のプレイヤーとは反対のプレイヤー
             player1_k_count (int): player1の騎士の数
             player2_k_count (int): player2の騎士の数
-            board_count (int): 盤面のコマの数
+            available_pieces (int): 残りのコマ数
             board_detail (list): 盤面の状態
             can_play (bool): アクション可能かどうか
+            is_game_finished (bool): ゲーム終了かどうか
             message (str): メッセージ
         Returns:
             dict: 画面のコンテキスト
@@ -216,9 +219,24 @@ class IndexView(View):
             'player2_k_count': player2_k_count,
             'available_pieces': available_pieces,
             'can_play': can_play,
+            'is_game_finished': is_game_finished,
             'message': message
         }
         return context
+    
+    def is_game_finished(self):
+        """ゲーム終了かどうかを判断する
+        Returns:
+            bool: ゲーム終了かどうか
+        """
+        # パスが連続で2回行われた場合
+        if ActionLog.objects.filter(player='player1').exists() and ActionLog.objects.filter(player='player2').exists():
+            if ActionLog.objects.filter(player='player1').latest('count').action == 'pass' and ActionLog.objects.filter(player='player2').latest('count').action == 'pass':
+                return True
+        # 盤面のコマ数がMAX_BOARD_PIECES以上となったの場合
+        if Player.objects.get(player='player1').board_count + Player.objects.get(player='player2').board_count >= MAX_BOARD_PIECES:
+            return True
+        return False
     
     def can_play(self, row, col, next_player):
         """ アクション可能か判断する 
@@ -312,14 +330,16 @@ class IndexView(View):
         # 置きたい位置
         new_k_row = previous_k_row + hand_card.down - hand_card.up
         new_k_col = previous_k_col + hand_card.right - hand_card.left
+        
+        # startがある場合
+        if Board.objects.filter(player='start').exists():
+            Board.objects.filter(player='start').delete()
 
         # 移動可能か判断
         if self.is_playable_hand(hand_card, current_player, previous_k_row, previous_k_col):
             # FIXME: 切り出したい
             # FIXME: 複数回同じコードを書いている
-            # 置きたい場所にstartがある場合
-            if Board.objects.filter(row=new_k_row, col=new_k_col, player='start').exists():
-                Board.objects.filter(row=new_k_row, col=new_k_col).delete()
+
             # 相手のコマがある場合
             if Board.objects.filter(row=new_k_row, col=new_k_col).exists():
                 # 押された騎士ボタンがある場合
